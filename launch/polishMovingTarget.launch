@@ -1,0 +1,26 @@
+<?xml version="1.0" ?>
+<launch>
+
+<!-- <group ns="polishing"> -->
+	<!-- Run rqt configure for dynamic reconfiguration of parameters  -->
+    <node name="rqt_reconfigure" pkg="rqt_reconfigure" type="rqt_reconfigure"/>
+
+	<!-- Parameter to start polishing -->
+	<param name="readyForPolishing" type="bool" value="false"/>
+
+	<arg name="initialObjectPosition" value="-0.4 0.2 0.2"/>
+	
+	<rosparam command="load" file="$(find test_polishing)/config/polishingMotion_params.yml"/>
+
+	<!-- Move to desired joint configuration -->
+    <node name="moveToDesiredJoints" pkg="test_polishing" type="moveToDesiredJoints" args="0 0 0 -120 0 60 0" output="screen"/>
+
+	<!-- Run moving object node -->
+    <node name="movingObject" pkg="test_polishing" type="movingObject" args="$(arg initialObjectPosition)" output="screen"/>
+
+	<!-- Run polishing motion generation node -->
+    <node name="polishingMotionGeneration" pkg="test_polishing" type="polishingMotionGeneration" args="$(arg initialObjectPosition)" output="screen"/>
+
+<!-- </group> -->
+
+</launch>
