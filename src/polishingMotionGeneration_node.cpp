@@ -18,6 +18,7 @@ int main(int argc, char **argv)
   std::string input_topic_name = "/lwr/ee_pose";
   std::string output_filtered_topic_name = "/ds1/desired_velocity";
   std::string output_topic_name = "/lwr/joint_controllers/passive_ds_command_vel";
+  // std::string output_topic_name = "/lwr/joint_controllers/command_pos";
 
   std::vector<double> CenterRotation(3);
 
@@ -38,12 +39,16 @@ int main(int argc, char **argv)
 
   double radius = 0.05f;
   double RotationSpeed = M_PI;
-  double ConvergenceRate = 4.0f;
+  double ConvergenceRate = 3.0f;
 
 
   // ros::Publisher pub = nh.advertise<geometry_msgs::Quaternion>("lwr/joint_controllers/passive_ds_command_orient", 1);
 
   geometry_msgs::Quaternion msg;
+  // msg.x = 0.7071f;
+  // msg.y = 0.7071f;
+  // msg.z = 0.0f;
+  // msg.w = 0.0f;
   msg.x = 0.0f;
   msg.y = 1.0f;
   msg.z = 0.0f;

@@ -1,8 +1,8 @@
-#include "MovingObject.h"
+#include "ConveyorBeltController.h"
 // #include <tf/transform_datatypes.h>
 
 
-MovingObject::MovingObject(ros::NodeHandle &n, float frequency):
+ConveyorBeltController::ConveyorBeltController(ros::NodeHandle &n, float frequency):
 	_n(n),
   _loopRate(frequency),
   _dt(1.0f/frequency)
@@ -12,7 +12,7 @@ MovingObject::MovingObject(ros::NodeHandle &n, float frequency):
 }
 
 
-bool MovingObject::init(Eigen::Vector3f initialPosition) 
+bool ConveyorBeltController::init(Eigen::Vector3f initialPosition) 
 {
 
 	// Initialize workspace shape
@@ -101,7 +101,7 @@ bool MovingObject::init(Eigen::Vector3f initialPosition)
 	_markerMsg.points.push_back(p6);
 
   // Subscribe to object speed topic
-  // _subObjectSpeed = _n.subscribe("/lwr/joint_states", 10, &MovingObject::updateCurrentJoints,this,ros::TransportHints().reliable().tcpNoDelay());
+  // _subObjectSpeed = _n.subscribe("/lwr/joint_states", 10, &ConveyorBeltController::updateCurrentJoints,this,ros::TransportHints().reliable().tcpNoDelay());
 
   // Publish object state to the ds motion generator
   _pubObjectState = _n.advertise<std_msgs::Float64MultiArray>("test_polishing/object_state", 10);
@@ -110,7 +110,7 @@ bool MovingObject::init(Eigen::Vector3f initialPosition)
   _pubObjectPosition = _n.advertise<geometry_msgs::PointStamped>("test_polishing/object_position", 1);
   _pubMarker = _n.advertise<visualization_msgs::Marker>("test_polishing/plane", 1);
 
-  _dynRecCallback = boost::bind(&MovingObject::dynamicReconfigureCallback,this, _1, _2);
+  _dynRecCallback = boost::bind(&ConveyorBeltController::dynamicReconfigureCallback,this, _1, _2);
   _dynRecServer.setCallback(_dynRecCallback);
 
 	if (_n.ok())
@@ -129,7 +129,7 @@ bool MovingObject::init(Eigen::Vector3f initialPosition)
 
 
 
-void MovingObject::run() {
+void ConveyorBeltController::run() {
 
 	while (_n.ok()) 
 	{
@@ -148,7 +148,7 @@ void MovingObject::run() {
 }
 
 
-void MovingObject::updateObjectPosition() 
+void ConveyorBeltController::updateObjectPosition() 
 {
 
 	_mutex.lock();
@@ -185,7 +185,7 @@ void MovingObject::updateObjectPosition()
 }
 
 
-bool MovingObject::isReachable() 
+bool ConveyorBeltController::isReachable() 
 {
 	Eigen::Vector3f distance = _position-_workspaceCenter;
 
@@ -200,7 +200,7 @@ bool MovingObject::isReachable()
 }
 
 
-void MovingObject::dynamicReconfigureCallback(test_polishing::object_paramsConfig &config, uint32_t level) 
+void ConveyorBeltController::dynamicReconfigureCallback(test_polishing::object_paramsConfig &config, uint32_t level) 
 {
 
 	ROS_INFO("Reconfigure request. Updatig the parameters ...");
