@@ -22,7 +22,7 @@ find_package(catkin REQUIRED COMPONENTS
 
 
 # Generate dynamic reconfigure parameters
-generate_dynamic_reconfigure_options(cfg/object_params.cfg)
+generate_dynamic_reconfigure_options(cfg/object_params.cfg cfg/conveyorBelt_params.cfg)
 
 
 # find_package(Eigen REQUIRED)
@@ -56,9 +56,9 @@ target_link_libraries(polishingMotionGeneration ds_motion_generator ${catkin_LIB
 add_dependencies(polishingMotionGeneration ${PROJECT_NAME}_gencfg)
 
 
-add_executable(movingObject src/movingObject_node.cpp src/MovingObject.cpp)
+add_executable(movingObject src/movingObject_node.cpp src/MovingObject.cpp )
 target_link_libraries(movingObject ${catkin_LIBRARIES})
 add_dependencies(movingObject ${PROJECT_NAME}_gencfg)
 
-add_executable(convoyer src/convoyer_node.cpp)
-target_link_libraries(convoyer ${catkin_LIBRARIES})
+add_executable(conveyorBelt src/conveyorBelt_node.cpp src/ConveyorBeltController.cpp)
+target_link_libraries(conveyorBelt ${catkin_LIBRARIES})

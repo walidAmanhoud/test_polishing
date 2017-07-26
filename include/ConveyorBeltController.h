@@ -1,22 +1,20 @@
-#ifndef __CONVOYER_CONTROLLER_H__
-#define __CONVOYER_CONTROLLER_H__
+#ifndef __CONVOYER_BELT_CONTROLLER_H__
+#define __CONVOYER_BELT_CONTROLLER_H__
 
 #include "ros/ros.h"
-#include "std_msgs/Float64MultiArray.h"
-#include "geometry_msgs/Vector3.h"
-#include "geometry_msgs/PointStamped.h"
-#include "sensor_msgs/JointState.h"
+#include <serial/serial.h>
+#include "std_msgs/Int32.h"
+#include "std_msgs/String.h"
 #include <vector>
 #include <mutex>
 #include <Eigen/Eigen>
 
 #include <dynamic_reconfigure/server.h>
-#include <test_polishing/object_paramsConfig.h>
+#include <test_polishing/conveyorBelt_paramsConfig.h>
 
-#include "visualization_msgs/Marker.h"
 // #include "visualization_msgs/MarkerArray.h"
 
-class MovingObject 
+class ConveyorBeltController 
 {
 
 	private:
@@ -26,57 +24,55 @@ class MovingObject
 		ros::Rate _loopRate;
 
 		// Subscribers and publishers definition
-		ros::Subscriber _subObjectSpeed;
-		ros::Publisher _pubObjectState;
-		ros::Publisher _pubObjectPosition;
-		ros::Publisher _pubMarker;
+		ros::Publisher _pubConveyorBeltSpeed;
 
 		// Node variables
-		Eigen::Vector3f _position;
-		Eigen::Vector3f _speed;
-		Eigen::Vector3f _workspaceCenter;
-		float _workspaceRadius;
-		
-		Eigen::Vector3f _convoyerCenter;
-		float _convoyerLength;
-		float _convoyerWidth;
-
-		std_msgs::Float64MultiArray _objectStateMsg;
-		geometry_msgs::PointStamped _objectPositionMsg;
-		visualization_msgs::Marker _markerMsg;
-
-		float _dt;
+		int _mode;
+		int _desiredSpeed;
+		int _measuredSpeed;
+		int _acceleration;
+		int _decceleration;
+		serial::Serial _serial;
+		std_msgs::Int32 _speedMessage;
+		std::string _outputSerialMessage;
 
 		// Class variables
 		std::mutex _mutex;
 
 		// Dynamic reconfigure definition (server+callback)
-		dynamic_reconfigure::Server<test_polishing::object_paramsConfig> _dynRecServer;
-		dynamic_reconfigure::Server<test_polishing::object_paramsConfig>::CallbackType _dynRecCallback;
+		dynamic_reconfigure::Server<test_polishing::conveyorBelt_paramsConfig> _dynRecServer;
+		dynamic_reconfigure::Server<test_polishing::conveyorBelt_paramsConfig>::CallbackType _dynRecCallback;
+		test_polishing::conveyorBelt_paramsConfig _config;
 
 
 	public:
 
-		MovingObject(ros::NodeHandle &n, float frequency);
+		ConveyorBeltController(ros::NodeHandle &n, float frequency);
 
 		// Initialize node
-		bool init(Eigen::Vector3f initialPosition);
+		bool init();
 
 		// Run node main loop
 		void run();
 
+		void setDesiredConfig(int mode, int speed, int acceleration, int decceleration);
+
 
 	private:
+		
+		void startConveyorBelt();
 
-		void updateObjectPosition(); 
+		void stopConveyorBelt();
 
-		void dynamicReconfigureCallback(test_polishing::object_paramsConfig &config, uint32_t level); 
+		void sendCommand();
 
-		bool isReachable(); 
+		std::string zeroPaddedStringConversion(int value, int desiredSize);
 
+		void processInputSerialMessage(std::string input);
 
-		// Callback to update joint position
-		// void updateObjectSpeed(const geometry_msgs::Vector3ConstPtr& msg);
+		void buildOutputSerialMessage();
+
+		void dynamicReconfigureCallback(test_polishing::conveyorBelt_paramsConfig &config, uint32_t level); 
 };
 
 
