@@ -1,0 +1,23 @@
+<?xml version="1.0" ?>
+<launch>
+
+  	<include file="$(find mocap_optitrack)/launch/epfl_optitrack.launch">
+    		<arg name="mocap_config_file"       value="$(find test_polishing)/config/optitrack.yaml"/>
+ 	</include>
+
+    <node name="objectStateManager" pkg="test_polishing" type="objectStateManager" output="screen"/>
+
+
+  <!-- LAUNCH RVIZ -->
+   <arg name="rviz_config" default="$(find lwr_launch)/launch/rviz/rviz_config.rviz"/>
+   <arg name="rviz_bringup" default="false"/> <!--If false, do not launch rviz-->
+
+	<node name="lwr_rviz" pkg="rviz" type="rviz" respawn="false" args="-d $(arg rviz_config)"
+	    output="screen"
+	    if="$(arg rviz_bringup)"/>
+
+
+  	<include file="$(find conveyor_belt_ros)/launch/conveyor_belt_ros.launch">
+ 	</include>
+
+</launch>

@@ -38,8 +38,6 @@ generate_messages(DEPENDENCIES std_msgs)
  )
 
 
-
-
 include_directories(include ${catkin_INCLUDE_DIRS} ${ds_motion_generator_INCLUDE_DIRS})
 
 add_executable(talkerKuka src/talkerKuka.cpp)
@@ -55,10 +53,10 @@ add_executable(polishingMotionGeneration src/polishingMotionGeneration_node.cpp)
 target_link_libraries(polishingMotionGeneration ds_motion_generator ${catkin_LIBRARIES})
 add_dependencies(polishingMotionGeneration ${PROJECT_NAME}_gencfg)
 
-
-add_executable(movingObject src/movingObject_node.cpp src/MovingObject.cpp )
+add_executable(movingObject src/movingObject_node.cpp src/MovingObject.cpp)
 target_link_libraries(movingObject ${catkin_LIBRARIES})
 add_dependencies(movingObject ${PROJECT_NAME}_gencfg)
 
-add_executable(conveyorBelt src/conveyorBelt_node.cpp src/ConveyorBeltController.cpp)
-target_link_libraries(conveyorBelt ${catkin_LIBRARIES})
+add_executable(objectStateManager src/objectStateManager_node.cpp src/ObjectStateManager.cpp)
+target_link_libraries(objectStateManager ${catkin_LIBRARIES})
+

@@ -161,20 +161,14 @@ void MovingObject::updateObjectPosition()
 	if(!isReachable())
 	{
 		_position = previousPosition;
-		_speed.setConstant(0.0f);
-
 	}
-	else
+
+	// Update messages contents
+	for(int k = 0; k < 3; k++)
 	{
-		// Update messages contents
-		for(int k = 0; k < 3; k++)
-		{
-			_objectStateMsg.data[k] = _position(k);
-			_objectStateMsg.data[k+3] = _speed(k);
-		}
-		
+		_objectStateMsg.data[k] = _position(k);
+		_objectStateMsg.data[k+3] = _speed(k);
 	}
-
 
 	_objectPositionMsg.header.stamp = ros::Time::now();
 	_objectPositionMsg.point.x = _position(0);
