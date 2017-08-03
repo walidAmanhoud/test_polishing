@@ -11,14 +11,14 @@ int main(int argc, char **argv)
   ros::init(argc, argv, "polishFixedTarget");
 
   ros::NodeHandle nh;
-  double frequency = 300.0;
+  double frequency = 500.0;
 
 
   // Parameters
   std::string input_topic_name = "/lwr/ee_pose";
   std::string output_filtered_topic_name = "/ds1/desired_velocity";
-  // std::string output_topic_name = "/lwr/joint_controllers/passive_ds_command_vel";
-  std::string output_topic_name = "/lwr/joint_controllers/command_pos";
+  std::string output_topic_name = "/lwr/joint_controllers/passive_ds_command_vel";
+  // std::string output_topic_name = "/lwr/joint_controllers/command_pos";
 
   std::vector<double> CenterRotation(3);
 
@@ -38,8 +38,8 @@ int main(int argc, char **argv)
 
 
   double radius = 0.05f;
-  double RotationSpeed = M_PI;
-  double ConvergenceRate = 3.0f;
+  double RotationSpeed = M_PI/2;
+  double ConvergenceRate = 4.0f;
 
 
   // ros::Publisher pub = nh.advertise<geometry_msgs::Quaternion>("lwr/joint_controllers/passive_ds_command_orient", 1);

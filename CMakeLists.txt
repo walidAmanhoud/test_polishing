@@ -22,7 +22,7 @@ find_package(catkin REQUIRED COMPONENTS
 
 
 # Generate dynamic reconfigure parameters
-generate_dynamic_reconfigure_options(cfg/object_params.cfg cfg/conveyorBelt_params.cfg)
+generate_dynamic_reconfigure_options(cfg/object_params.cfg cfg/conveyorBelt_params.cfg cfg/attractive_params.cfg)
 
 
 # find_package(Eigen REQUIRED)
@@ -60,3 +60,7 @@ add_dependencies(movingObject ${PROJECT_NAME}_gencfg)
 add_executable(objectStateManager src/objectStateManager_node.cpp src/ObjectStateManager.cpp)
 target_link_libraries(objectStateManager ${catkin_LIBRARIES})
 
+
+add_executable(attractiveMotion src/attractiveMotion_node.cpp src/AttractiveMotionGenerator.cpp)
+target_link_libraries(attractiveMotion ${catkin_LIBRARIES})
+add_dependencies(attractiveMotion ${PROJECT_NAME}_gencfg)
