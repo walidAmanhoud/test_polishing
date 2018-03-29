@@ -8,7 +8,7 @@
 #include "geometry_msgs/Quaternion.h"
 #include "nav_msgs/Path.h"
 #include "std_msgs/Float64MultiArray.h"
-
+#include "geometry_msgs/WrenchStamped.h"
 
 #include <vector>
 
@@ -33,6 +33,7 @@ private:
 
 	ros::Subscriber _subRealPose;
 	ros::Subscriber _subAttractorState;
+	ros::Subscriber _subEndEffectorFt;
 
 	ros::Publisher _pubAttractorPosition;
 	ros::Publisher _pubDesiredTwist;
@@ -46,6 +47,7 @@ private:
 	geometry_msgs::Pose _msgDesiredPose;
 	geometry_msgs::Twist _msgDesiredTwist;
 	geometry_msgs::Quaternion _msgDesiredOrientation;
+	geometry_msgs::WrenchStamped _msgEndEffectorFt;
 
 	nav_msgs::Path _msgDesiredPath;
 	int MAX_FRAME = 200;
@@ -53,6 +55,22 @@ private:
 	float _convergenceScale;
 	float _convergenceRate;
 	float _dt;
+
+	float _kp;
+	float _ki;
+	float _pidInteg = 0.0f;
+	float _pidError = 0.0f;
+	float _up;
+	float _ui;
+	float _targetForce;
+
+	MathLib::Vector _pidAttractorOffset;
+
+
+	bool _firstContact = false;
+	bool _usePid = false;
+
+
 
 
 	//dynamic reconfig settig
@@ -67,6 +85,7 @@ private:
 	MathLib::Vector _attractorPosition;
 	MathLib::Vector _attractorOffset;
 	MathLib::Vector _attractorSpeed;
+	MathLib::Vector _endEffectorForces;
 
 	MathLib::Vector _realPose;
 	MathLib::Vector _desiredPosition;
@@ -97,6 +116,8 @@ private:
 
 
 	void updateRealPosition(const geometry_msgs::Pose::ConstPtr& msg);
+
+	void updateEndEffectorFt(const geometry_msgs::WrenchStamped::ConstPtr& msg);
 
 	void updateAttractorState(const std_msgs::Float64MultiArray::ConstPtr& msg);
 

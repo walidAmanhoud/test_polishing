@@ -44,10 +44,10 @@ int main(int argc, char **argv)
     moveToDesiredJoints.run();
   }
 
-  if(n.hasParam("readyForPolishing"))
+  if(n.hasParam("ready"))
   {
-    n.setParam("readyForPolishing", true);
-    ROS_INFO("Ready for polishing");
+    n.setParam("ready", true);
+    ROS_INFO("Ready");
   }
 
   return 0;

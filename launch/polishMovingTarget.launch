@@ -6,7 +6,7 @@
     <node name="rqt_reconfigure" pkg="rqt_reconfigure" type="rqt_reconfigure"/>
 
 	<!-- Parameter to start polishing -->
-	<param name="readyForPolishing" type="bool" value="false"/>
+	<param name="ready" type="bool" value="false"/>
 
 	<arg name="initialObjectPosition" value="-0.4 0.2 0.2"/>
 	

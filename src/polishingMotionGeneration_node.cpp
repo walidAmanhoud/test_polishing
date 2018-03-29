@@ -38,8 +38,8 @@ int main(int argc, char **argv)
 
 
   double radius = 0.05f;
-  double RotationSpeed = M_PI/2;
-  double ConvergenceRate = 4.0f;
+  double RotationSpeed = M_PI;
+  double ConvergenceRate = 3.0f;
 
 
   // ros::Publisher pub = nh.advertise<geometry_msgs::Quaternion>("lwr/joint_controllers/passive_ds_command_orient", 1);
@@ -73,20 +73,20 @@ int main(int argc, char **argv)
   }
   else 
   {
-    bool readyForPolishing = false;
-    if(nh.hasParam("readyForPolishing"))
+    bool ready = false;
+    if(nh.hasParam("ready"))
     {
-      while(!readyForPolishing)
+      while(!ready)
       {
 
-        nh.getParam("readyForPolishing", readyForPolishing);
+        nh.getParam("ready", ready);
       }
     
       ROS_INFO("Start polishing");
       cycle_motion_generator.setDesiredOrientation(msg);
       cycle_motion_generator.Run();
 
-      nh.deleteParam("readyForPolishing");
+      nh.deleteParam("ready");
     }
     else
     {

@@ -34,7 +34,12 @@ bool AttractiveMotionGenerator::init() {
 	_attractorOffset.Resize(3);
 	_attractorOffset.Zero();
 
-	
+	_endEffectorForces.Resize(3);
+	_endEffectorForces.Zero();
+
+	_pidAttractorOffset.Resize(3);
+	_pidAttractorOffset.Zero();
+
 	if (_convergenceRate < 0) 
 	{
 		ROS_ERROR("The convergence rate cannot be negative!");
@@ -63,6 +68,7 @@ bool AttractiveMotionGenerator::InitializeROS() {
 
 	_subRealPose = _n.subscribe( inputTopicName , 1, &AttractiveMotionGenerator::updateRealPosition, this, ros::TransportHints().reliable().tcpNoDelay());
 	_subAttractorState = _n.subscribe("test_polishing/object_state", 1000, &AttractiveMotionGenerator::updateAttractorState, this, ros::TransportHints().reliable().tcpNoDelay());
+	_subEndEffectorFt = _n.subscribe("lwr/ee_ft",1,&AttractiveMotionGenerator::updateEndEffectorFt, this, ros::TransportHints().reliable().tcpNoDelay());
 
 	// if(_outputVelocity)
 	// {
@@ -84,6 +90,7 @@ bool AttractiveMotionGenerator::InitializeROS() {
 
 	_dynRecCallback = boost::bind(&AttractiveMotionGenerator::dynamicReconfigureCallback, this, _1, _2);
 	_dynRecServer.setCallback(_dynRecCallback);
+	// _dynRecServer.getConfigDefault(_config);
 
 
 
@@ -157,6 +164,18 @@ void AttractiveMotionGenerator::updateRealPosition(const geometry_msgs::Pose::Co
 	}
 }
 
+void AttractiveMotionGenerator::updateEndEffectorFt(const geometry_msgs::WrenchStamped::ConstPtr& msg)
+{
+
+	_msgEndEffectorFt = *msg;
+
+	_endEffectorForces(0) = _msgEndEffectorFt.wrench.force.x;
+	_endEffectorForces(1) = _msgEndEffectorFt.wrench.force.y;
+	_endEffectorForces(2) = _msgEndEffectorFt.wrench.force.z;
+
+}
+
+
 
 void AttractiveMotionGenerator::updateAttractorState(const std_msgs::Float64MultiArray::ConstPtr& msg) 
 {
@@ -179,11 +198,56 @@ void AttractiveMotionGenerator::computeDesiredVelocity()
 {
 	mutex_.lock();
 
+	MathLib::Vector error;
+	error.Resize(3);
+	error = _realPose-_attractorPosition;
 
-	std::cerr << _attractorOffset(0) << " " << _attractorOffset(1) << " " << _attractorOffset(2) << " " << std::endl;
+
+	if(_usePid)
+
+	{
+		if(error.Norm() < 0.02)
+		{
+			if(!_firstContact)
+			{
+				_firstContact = true;
+				ROS_INFO("Target touched");
+			}	
+		}
+
+		if(_firstContact)
+		{
+			_pidError = -(_targetForce-_endEffectorForces(2));
+			_pidInteg += _dt*_pidError;
+			_up = _kp*_pidError;
+			_ui = _ki*_pidInteg;
+
+			if(_ui < -0.3)
+			{
+				_ui = -0.3f;
+			}
+
+			float command = _up+_ui;
+
+			if(command<-0.3f)
+			{
+				command = -0.3f;
+			}
+			_pidAttractorOffset(2) = command;
+			std::cerr << "command: " << command << " up " << _up << " ui " << _ui << std::endl;
+		}
+	}
+	else
+	{
+		_pidAttractorOffset(2) = 0.0f;
+		_pidInteg = 0.0f;
+	}
+
+	// std::cerr << _attractorOffset(0) << " " << _attractorOffset(1) << " " << _attractorOffset(2) << " " << std::endl;
 	for(int k = 0; k < 3; k++)
 	{
-		_desiredVelocity(k) = -_convergenceScale*_convergenceRate*(_realPose(k)-_attractorPosition(k)-_attractorOffset(k))+_attractorSpeed(k);
+		// _desiredVelocity(k) = -_convergenceScale*_convergenceRate*(_realPose(k)-_attractorPosition(k)-_attractorOffset(k))+_attractorSpeed(k);
+		_desiredVelocity(k) = -_convergenceScale*_convergenceRate*(_realPose(k)-_attractorPosition(k)-_attractorOffset(k)-_pidAttractorOffset(k))+_attractorSpeed(k);
 	}
 
 	if (std::isnan(_desiredVelocity.Norm2())) 
@@ -252,6 +316,11 @@ void AttractiveMotionGenerator::dynamicReconfigureCallback(test_polishing::attra
 	_attractorOffset(1) = config.attractorOffsetY;
 	_attractorOffset(2) = config.attractorOffsetZ;
 
+	_kp = config.kp;
+	_ki = config.ki;
+	_usePid = config.usePid;
+	_targetForce = config.targetForce;
+
 	if (_convergenceRate < 0)
 	{
 		ROS_ERROR("RECONFIGURE: The scaling factor for convergence rate cannot be negative!");
@@ -289,7 +358,8 @@ void AttractiveMotionGenerator::publishFuturePath() {
 	msg.header.stamp = ros::Time::now();
 	msg.point.x = _attractorPosition(0) + _attractorOffset(0);
 	msg.point.y = _attractorPosition(1) + _attractorOffset(1);
-	msg.point.z = _attractorPosition(2) + _attractorOffset(2);
+	// msg.point.z = _attractorPosition(2) + _attractorOffset(2);
+	msg.point.z = _attractorPosition(2) + _attractorOffset(2) + _pidAttractorOffset(2);
 
 	_pubAttractorPosition.publish(msg);
 
@@ -306,7 +376,8 @@ void AttractiveMotionGenerator::publishFuturePath() {
 
 		for(int k = 0; k < 3; k++)
 		{
-			simulatedVelocity(k) = -_convergenceScale*_convergenceRate*(simulatedPosition(k)-_attractorPosition(k)-_attractorOffset(k))+_attractorSpeed(k);
+			simulatedVelocity(k) = -_convergenceScale*_convergenceRate*(simulatedPosition(k)-_attractorPosition(k)-_attractorOffset(k)-_pidAttractorOffset(k))+_attractorSpeed(k);
+			// simulatedVelocity(k) = -_convergenceScale*_convergenceRate*(simulatedPosition(k)-_attractorPosition(k)-_attractorOffset(k))+_attractorSpeed(k);
 		}
 
 		if (simulatedVelocity.Norm() > _velocityLimit) 

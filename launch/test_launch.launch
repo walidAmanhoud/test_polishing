@@ -1,0 +1,17 @@
+<?xml version="1.0" ?>
+<launch>
+
+  	<include file="$(find mocap_optitrack)/launch/epfl_optitrack.launch">
+    		<arg name="mocap_config_file"       value="$(find test_polishing)/config/test.yaml"/>
+ 	</include>
+	<!-- SIMULATION LAUNCH FILE  "Simple example" -->
+
+  	<!-- <include file="$(find test_polishing)/launch/conveyor_belt.launch"> -->
+			<!-- <arg name="CONVEYOR_BELT_MODE" value="1"/> -->
+			<!-- <arg name="CONVEYOR_BELT_SPEED" value="400"/> -->
+			<!-- <arg name="CONVEYOR_BELT_ACCELERATION" value="30"/> -->
+			<!-- <arg name="CONVEYOR_BELT_DECCELERATION" value="30"/> -->
+			<!-- <arg name="CONVEYOR_BELT_GUI" value="false"/> -->
+ 	<!-- </include> -->
+
+</launch>
