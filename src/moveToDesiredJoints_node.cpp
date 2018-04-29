@@ -9,30 +9,44 @@ int main(int argc, char **argv)
   // Ros initialization
   ros::init(argc, argv, "MoveToDesiredJoints");
 
-  std_msgs::Float64MultiArray desiredJoints;
+  MoveToDesiredJoints::Mode mode;
 
-  // Set the number of joints
-  desiredJoints.data.resize(7);
+  Eigen::VectorXd finalDesiredJoints;
+  finalDesiredJoints.resize(NB_JOINTS);
 
-  // Initialize desired joints
-  for(int k = 0; k < 7; k++)
-  {
-    desiredJoints.data[k] = 0.0f;
-  }
+  finalDesiredJoints.setConstant(0.0f);
 
   // Check if desired angles are specified with the command line
-  if(argc == 8)
+  if(argc == 9)
   {
-    for(int k = 0; k < 7; k++)
+    if(std::string(argv[1]) == "s")
     {
-      desiredJoints.data[k] = atof(argv[k+1])*M_PI/180.0f;
+      mode = MoveToDesiredJoints::Mode::SIM;
+    }  
+    else if(std::string(argv[1]) == "r")
+    {
+      mode = MoveToDesiredJoints::Mode::REAL;
     }
+    else
+    {
+      ROS_ERROR("Wrong input arguments, the first argument should be the mode either s(sim) or r(real) followed by 7 joint angles in degree");
+      return 0;
+    }
+
+    for(int k = 0; k < NB_JOINTS; k++)
+    {
+      finalDesiredJoints(k) = atof(argv[k+2])*M_PI/180.0f;
+    }
+  }
+  else
+  {
+    return 0;
   }
 
   ros::NodeHandle n;
-  float frequency = 100.0f;
+  float frequency = 200.0f;
 
-  MoveToDesiredJoints moveToDesiredJoints(n,frequency);
+  MoveToDesiredJoints moveToDesiredJoints(n,frequency,mode);
 
   if (!moveToDesiredJoints.init()) 
   {
@@ -40,93 +54,11 @@ int main(int argc, char **argv)
   }
   else
   {
-    moveToDesiredJoints.setDesiredJoints(desiredJoints);
+    moveToDesiredJoints.setDesiredJoints(finalDesiredJoints);
     moveToDesiredJoints.run();
   }
 
-  if(n.hasParam("readyForPolishing"))
-  {
-    n.setParam("readyForPolishing", true);
-    ROS_INFO("Ready for polishing");
-  }
 
   return 0;
 
 }
-
-
-// std_msgs::Float64MultiArray desiredJoints;
-// bool reached;
-
-// void readJointsCallback(const sensor_msgs::JointState::ConstPtr& msg)
-// {
-//   reached = true;
-//   for(int k = 0; k < 7; k++)
-//   {
-//     if(fabs(msg->position[k]-desiredJoints.data[k])>1e-3f)
-//     {
-//       reached = false;
-//       break;
-//     }
-//   }
-// }
-
-// int main(int argc, char **argv)
-// {
-//   // Ros initialization
-//   ros::init(argc, argv, "goToJoints");
-
-//   // Set the number of joints
-//   desiredJoints.data.resize(7);
-
-//   // Initialize desired joints
-//   for(int k =0; k < 7; k++)
-//   {
-//     desiredJoints.data[k] = 0.0f;
-//   }
-
-//   // Check if desired angles are specified with the command line
-//   if(argc == 8)
-//   {
-//     for(int k = 0; k < 7; k++)
-//     {
-//       desiredJoints.data[k] = atof(argv[k+1])*M_PI/180.0f;
-//     }
-//   }
-//   else
-//   {
-//     std::cerr << "Send default desired joint configuration" << std::endl;
-//   }
-
-//   ros::NodeHandle n;
-
-//   // Subscribe to joint states topic
-//   ros::Subscriber sub = n.subscribe("/lwr/joint_states", 10, &readJointsCallback);
-
-//   // Publish to the joint position controller topic
-//   ros::Publisher pub = n.advertise<std_msgs::Float64MultiArray>("lwr/joint_controllers/command_joint_pos", 10);
-
-//   // Node frequency 
-//   ros::Rate loop_rate(100);
-   
-//   int count = 0;
-
-//   // Loop until user stop or target reached
-//   while (n.ok())
-//   {
-//     pub.publish(desiredJoints);
-
-//     ros::spinOnce();
-
-//     loop_rate.sleep();
-//     ++count;
-
-//     if(reached)
-//     {
-//       std::cerr << "Desired joint angles reached" << std::endl;
-//       break;
-//     }
-//   }
-
-//   return 0;
-// }

@@ -41,16 +41,19 @@
   <!--   <test_depend>gtest</test_depend> -->
   <buildtool_depend>catkin</buildtool_depend>
   <build_depend>lwr_ros_client</build_depend>
-  <build_depend>ds_motion_generator</build_depend>
+  <!-- <build_depend>ds_motion_generator</build_depend> -->
   <build_depend>roscpp</build_depend>
   <build_depend>rospy</build_depend>
   <build_depend>std_msgs</build_depend>
   <build_depend>dynamic_reconfigure</build_depend>
   <build_depend>eigen</build_depend>
   <build_depend>serial</build_depend>
+  <build_depend>kuka_fri_bridge</build_depend>
+  <build_depend>robot_motion_generation</build_depend>
+  <build_depend>mathlib</build_depend>
 
   <run_depend>lwr_ros_client</run_depend>
-  <run_depend>ds_motion_generator</run_depend>
+  <!-- <run_depend>ds_motion_generator</run_depend> -->
   <run_depend>roscpp</run_depend>
   <run_depend>rospy</run_depend>
   <run_depend>std_msgs</run_depend>
@@ -58,6 +61,9 @@
 
   <run_depend>eigen</run_depend>
   <run_depend>serial</run_depend>
+  <run_depend>kuka_fri_bridge</run_depend>
+  <run_depend>robot_motion_generation</run_depend>
+  <run_depend>mathlib</run_depend>
 
 
 

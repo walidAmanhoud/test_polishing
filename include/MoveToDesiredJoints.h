@@ -2,14 +2,23 @@
 #define __MOVE_TO_DESIRED_JOINTS_H__
 
 #include "ros/ros.h"
-#include "std_msgs/Float64MultiArray.h"
+#include "std_msgs/Float32MultiArray.h"
+#include <robot_motion_generation/CDDynamics.h>
+#include "kuka_fri_bridge/JointStateImpedance.h"
 #include "sensor_msgs/JointState.h"
 #include <vector>
 #include <mutex>
+#include "mathlib_eigen_conversions.h"
+
+
+#define JOINT_TOLERANCE 1e-2f
+#define NB_JOINTS 7
 
 class MoveToDesiredJoints 
 {
-
+	public:
+		enum Mode {SIM = 0, REAL = 1};
+	
 	private:
 
 		// ROS variables
@@ -21,17 +30,28 @@ class MoveToDesiredJoints
 		ros::Publisher _pubDesiredJoints;
 
 		// Node variables
-		sensor_msgs::JointState _currentJoints;
-		std_msgs::Float64MultiArray _desiredJoints;
+		kuka_fri_bridge::JointStateImpedance _desiredJointsRealMsg;
+		std_msgs::Float32MultiArray _desiredJointsSimMsg;
+
+		Eigen::VectorXd _finalDesiredJoints;
+		Eigen::VectorXd _desiredJoints;
+		Eigen::VectorXd _currentJoints;
+
 		float _jointTolerance;
 		bool _firstJointsUpdate;
 
 		// Class variables
 		std::mutex _mutex;
 
+		Mode _mode;
+
+		motion::CDDynamics _filter;
+
+		float _dt;
+
 
 	public:
-		MoveToDesiredJoints(ros::NodeHandle &n, float frequency, float jointTolerance = 1.0e-3f);
+		MoveToDesiredJoints(ros::NodeHandle &n, float frequency, Mode mode);
 
 		// Initialize node
 		bool init();
@@ -39,18 +59,19 @@ class MoveToDesiredJoints
 		// Run node main loop
 		void run();
 
-		// Set desired joint angles
-		void setDesiredJoints(std_msgs::Float64MultiArray desiredJoints);
+		void computeDesiredJoints();
+
+		void publishData();
+
+		void setDesiredJoints(Eigen::VectorXd finalDesiredJoints);
 
 	private:
-
 
 		// Callback to update joint position
 		void updateCurrentJoints(const sensor_msgs::JointState::ConstPtr& msg);
 
 		// Check joints error
 		bool checkJointsError();
-
 };
 
 
