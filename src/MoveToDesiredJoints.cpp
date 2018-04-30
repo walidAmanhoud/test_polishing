@@ -2,9 +2,10 @@
 // #include <tf/transform_datatypes.h>
 
 
-MoveToDesiredJoints::MoveToDesiredJoints(ros::NodeHandle &n, float frequency, float jointTolerance):
+MoveToDesiredJoints::MoveToDesiredJoints(ros::NodeHandle &n, float frequency, Mode mode, float jointTolerance):
 	_n(n),
   _loopRate(frequency),
+  _mode(mode),
 	_jointTolerance(jointTolerance)
 {
 
@@ -15,29 +16,28 @@ MoveToDesiredJoints::MoveToDesiredJoints(ros::NodeHandle &n, float frequency, fl
 bool MoveToDesiredJoints::init() 
 {
 
+
   // Set the number of joints
-  _desiredJoints.data.resize(7);
+	for(int k = 0; k < NB_ROBOTS; k++)
+	{
+		_desiredJoints[k].data.resize(NB_JOINTS);
+		_currentJoints[k].data.resize(NB_JOINTS);
 
-  _currentJoints.position.resize(7);
-  _currentJoints.velocity.resize(7);
-  _currentJoints.effort.resize(7);
-
-  // Initialize desired joints
-  for(int k =0; k < 7; k++)
-  {
-    _desiredJoints.data[k] = 0.0f;
-    _currentJoints.position[k] = 0.0f;
-    _currentJoints.velocity[k] = 0.0f;
-    _currentJoints.effort[k] = 0.0f;
-  }
-
-  _firstJointsUpdate = false;
+		for(int m = 0; m < NB_JOINTS; m++)
+		{
+			_currentJoints[k].data[m] = 0.0f;
+			_desiredJoints[k].data[m] = 0.0f;
+		}
+  	_firstJointsUpdate[k] = false;
+	}
 
   // Subscribe to joint states topic
-  _subCurrentJoints = _n.subscribe("/lwr/joint_states", 10, &MoveToDesiredJoints::updateCurrentJoints,this,ros::TransportHints().reliable().tcpNoDelay());
+  _subCurrentJoints[RIGHT] = _n.subscribe<sensor_msgs::JointState>("/lwr/joint_states", 1, boost::bind(&MoveToDesiredJoints::updateCurrentJoints,this,_1,RIGHT),ros::VoidPtr(),ros::TransportHints().reliable().tcpNoDelay());
+  _subCurrentJoints[LEFT] = _n.subscribe<sensor_msgs::JointState>("/lwr2/joint_states", 1, boost::bind(&MoveToDesiredJoints::updateCurrentJoints,this,_1,LEFT),ros::VoidPtr(),ros::TransportHints().reliable().tcpNoDelay());
 
   // Publish to the joint position controller topic
-  _pubDesiredJoints = _n.advertise<std_msgs::Float64MultiArray>("lwr/joint_controllers/command_joint_pos", 10);
+  _pubDesiredJoints[RIGHT] = _n.advertise<std_msgs::Float64MultiArray>("lwr/joint_controllers/command_joint_pos", 1);
+  _pubDesiredJoints[LEFT] = _n.advertise<std_msgs::Float64MultiArray>("lwr2/joint_controllers/command_joint_pos", 1);
 
 	if (_n.ok())
 	{ 
@@ -58,49 +58,83 @@ void MoveToDesiredJoints::run() {
 
 	while (_n.ok()) 
 	{
-		_pubDesiredJoints.publish(_desiredJoints);
+		if(_mode == SINGLE_LEFT && _firstJointsUpdate[LEFT])
+		{
+			_pubDesiredJoints[LEFT].publish(_desiredJoints[LEFT]);
+			if(checkJointsError(LEFT))
+			{
+				ROS_INFO("The desired joints configuration is reached for left robot");
+				break;
+			}
+		}
+		else if(_mode == SINGLE_RIGHT && _firstJointsUpdate[RIGHT])
+		{
+			_pubDesiredJoints[RIGHT].publish(_desiredJoints[RIGHT]);
+			if(checkJointsError(RIGHT))
+			{
+				ROS_INFO("The desired joints configuration is reached for right robot");
+				break;
+			}
+		}
+		else if(_mode == BOTH && _firstJointsUpdate[LEFT] && _firstJointsUpdate[RIGHT])
+		{
+			_pubDesiredJoints[LEFT].publish(_desiredJoints[LEFT]);
+			_pubDesiredJoints[RIGHT].publish(_desiredJoints[RIGHT]);
+			if(checkJointsError(LEFT) && checkJointsError(RIGHT))
+			{
+				ROS_INFO("The desired joints configuration is reached for both robots");
+				break;
+			}
+		}	
 
 		ros::spinOnce();
 
 		_loopRate.sleep();
 
-		if(checkJointsError() && _firstJointsUpdate)
-		{
-			ROS_INFO("The desired joints configuration is reached");
-			break;
-		}
 	}
 }
 
 
 void MoveToDesiredJoints::setDesiredJoints(std_msgs::Float64MultiArray desiredJoints) 
 {
-	_desiredJoints = desiredJoints;
+	if(_mode == SINGLE_LEFT)
+	{
+		_desiredJoints[LEFT] = desiredJoints;
+	}
+	else if(_mode == SINGLE_RIGHT)
+	{
+		_desiredJoints[RIGHT] = desiredJoints;
+	}
+	else if(_mode == BOTH)
+	{
+		_desiredJoints[LEFT] = desiredJoints;
+		_desiredJoints[RIGHT] = desiredJoints;	
+	}
 }
 
 
-void MoveToDesiredJoints::updateCurrentJoints(const sensor_msgs::JointState::ConstPtr& msg) 
+void MoveToDesiredJoints::updateCurrentJoints(const sensor_msgs::JointState::ConstPtr& msg, int k) 
 {
-	for(int k = 0; k < 7; k++)
+	for(int m = 0; m < NB_JOINTS; m++)
 	{
-		_currentJoints.position[k] = msg->position[k];
+		_currentJoints[k].data[m] = msg->position[m];
 	}
-	if(!_firstJointsUpdate)
+	if(!_firstJointsUpdate[k])
 	{
-		_firstJointsUpdate = true;
+		_firstJointsUpdate[k] = true;
 	}
 }
 
 
-bool MoveToDesiredJoints::checkJointsError() 
+bool MoveToDesiredJoints::checkJointsError(int k) 
 {
 	_mutex.lock();
 
 	// Check of all joint angles reached their respectives targets
 	bool reached = true;
-	for(int k = 0; k < 7; k++)
+	for(int m = 0; m < NB_JOINTS; m++)
 	{
-    if(fabs(_currentJoints.position[k]-_desiredJoints.data[k])>_jointTolerance)
+    if(fabs(_currentJoints[k].data[m]-_desiredJoints[k].data[m])>_jointTolerance)
     {
       reached = false;
       break;
