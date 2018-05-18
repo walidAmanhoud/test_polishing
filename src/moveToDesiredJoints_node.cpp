@@ -12,27 +12,61 @@ int main(int argc, char **argv)
   std_msgs::Float64MultiArray desiredJoints;
 
   // Set the number of joints
-  desiredJoints.data.resize(7);
+  desiredJoints.data.resize(NB_JOINTS);
 
   // Initialize desired joints
-  for(int k = 0; k < 7; k++)
+  for(int k = 0; k < NB_JOINTS; k++)
   {
     desiredJoints.data[k] = 0.0f;
   }
 
+
+  MoveToDesiredJoints::Mode mode;
   // Check if desired angles are specified with the command line
   if(argc == 8)
   {
-    for(int k = 0; k < 7; k++)
+    for(int k = 0; k < NB_JOINTS; k++)
     {
       desiredJoints.data[k] = atof(argv[k+1])*M_PI/180.0f;
     }
+    
+    mode = MoveToDesiredJoints::Mode::SINGLE_RIGHT;
   }
+  else if(argc == 10)
+  {
+    for(int k = 0; k < NB_JOINTS; k++)
+    {
+      desiredJoints.data[k] = atof(argv[k+1])*M_PI/180.0f;
+    }
+    if(std::string(argv[8]) == "-m" && std::string(argv[9]) == "l")
+    {
+      mode = MoveToDesiredJoints::Mode::SINGLE_LEFT;
+    }
+    else if(std::string(argv[8]) == "-m" && std::string(argv[9]) == "r")
+    {
+      mode = MoveToDesiredJoints::Mode::SINGLE_RIGHT;
+    }
+    else if(std::string(argv[8]) == "-m" && std::string(argv[9]) == "b")
+    {
+      mode = MoveToDesiredJoints::Mode::BOTH;
+    }
+    else
+    {
+      ROS_ERROR("Wrong mode arguments, the command line arguments should be: j1 j2 j3 j4 j5 j6 j7 -m(mode) l(single left)/r(single right)/b(both)");
+      return 0;
+    }
+  }
+  else
+  {
+    ROS_ERROR("You are missing arguments, the command line arguments should be: j1 j2 j3 j4 j5 j6 j7 -m(mode) l(single left)/r(single right)/b(both)");
+    return 0;
+  }
+
 
   ros::NodeHandle n;
   float frequency = 100.0f;
 
-  MoveToDesiredJoints moveToDesiredJoints(n,frequency);
+  MoveToDesiredJoints moveToDesiredJoints(n,frequency, mode);
 
   if (!moveToDesiredJoints.init()) 
   {
@@ -44,89 +78,5 @@ int main(int argc, char **argv)
     moveToDesiredJoints.run();
   }
 
-  if(n.hasParam("ready"))
-  {
-    n.setParam("ready", true);
-    ROS_INFO("Ready");
-  }
-
   return 0;
-
 }
-
-
-// std_msgs::Float64MultiArray desiredJoints;
-// bool reached;
-
-// void readJointsCallback(const sensor_msgs::JointState::ConstPtr& msg)
-// {
-//   reached = true;
-//   for(int k = 0; k < 7; k++)
-//   {
-//     if(fabs(msg->position[k]-desiredJoints.data[k])>1e-3f)
-//     {
-//       reached = false;
-//       break;
-//     }
-//   }
-// }
-
-// int main(int argc, char **argv)
-// {
-//   // Ros initialization
-//   ros::init(argc, argv, "goToJoints");
-
-//   // Set the number of joints
-//   desiredJoints.data.resize(7);
-
-//   // Initialize desired joints
-//   for(int k =0; k < 7; k++)
-//   {
-//     desiredJoints.data[k] = 0.0f;
-//   }
-
-//   // Check if desired angles are specified with the command line
-//   if(argc == 8)
-//   {
-//     for(int k = 0; k < 7; k++)
-//     {
-//       desiredJoints.data[k] = atof(argv[k+1])*M_PI/180.0f;
-//     }
-//   }
-//   else
-//   {
-//     std::cerr << "Send default desired joint configuration" << std::endl;
-//   }
-
-//   ros::NodeHandle n;
-
-//   // Subscribe to joint states topic
-//   ros::Subscriber sub = n.subscribe("/lwr/joint_states", 10, &readJointsCallback);
-
-//   // Publish to the joint position controller topic
-//   ros::Publisher pub = n.advertise<std_msgs::Float64MultiArray>("lwr/joint_controllers/command_joint_pos", 10);
-
-//   // Node frequency 
-//   ros::Rate loop_rate(100);
-   
-//   int count = 0;
-
-//   // Loop until user stop or target reached
-//   while (n.ok())
-//   {
-//     pub.publish(desiredJoints);
-
-//     ros::spinOnce();
-
-//     loop_rate.sleep();
-//     ++count;
-
-//     if(reached)
-//     {
-//       std::cerr << "Desired joint angles reached" << std::endl;
-//       break;
-//     }
-//   }
-
-//   return 0;
-// }
