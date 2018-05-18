@@ -28,7 +28,8 @@ bool MoveToDesiredJoints::init()
 			_currentJoints[k].data[m] = 0.0f;
 			_desiredJoints[k].data[m] = 0.0f;
 		}
-  	_firstJointsUpdate[k] = false;
+		
+		_firstJointsUpdate[k] = false;
 	}
 
   // Subscribe to joint states topic
